@@ -357,6 +357,11 @@ class NanobindStubsGenerator:
                     class_module = StubNanobindEnum(name, obj)
                 else:
                     class_module = StubClass(name, obj)
+                sup_cls = inspect.getmro(obj)
+                for cl in sup_cls:
+                    s = str(cl).split("'")[1]
+                    if s != "object" and s.split(".")[-1] != name:
+                        class_module.super_classes.append(s)
                 has_been_handled = True
                 stub_entry.children.append(class_module)
                 self._analyse_module(obj, class_module)
