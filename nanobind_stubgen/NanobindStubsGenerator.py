@@ -380,16 +380,21 @@ class NanobindStubsGenerator:
                         stub_routine = StubNanobindMethod(name, obj)
                 else:
                     if name == "__init__":
-                        module_name = type(module).__name__
-                        if module_name == "nb_enum" or module_name == "nb_type":
-                            # todo: handle enum and type constructors
-                            stub_routine = StubNanobindConstructor(name, obj, suppress_warning=True)
+                        signature, doc_str = utils.parse_method_doc(name, obj, False, True)
+                        if signature == "__init__(*args, **kwargs)" and doc_str is None:
+                            stub_routine = None
                         else:
-                            stub_routine = StubNanobindConstructor(name, obj)
+                            module_name = type(module).__name__
+                            if module_name == "nb_enum" or module_name == "nb_type":
+                                # todo: handle enum and type constructors
+                                stub_routine = StubNanobindConstructor(name, obj, suppress_warning=True)
+                            else:
+                                stub_routine = StubNanobindConstructor(name, obj)
                     else:
                         stub_routine = StubRoutine(name, obj)
                 has_been_handled = True
-                stub_entry.children.append(stub_routine)
+                if stub_routine is not None:
+                    stub_entry.children.append(stub_routine)
 
             if type(obj).__name__ == "nb_func":
                 stub_nb_func = StubNanobindFunction(name, obj)
