@@ -76,7 +76,7 @@ class StubModule(StubEntry):
             module_path = output_path.joinpath(f"{self.name}.pyi")
 
         # create init file
-        out = [f"from typing import Any, Optional, overload, Typing, Sequence, Iterable",
+        out = [f"from typing import Any, Optional, overload, Sequence, Iterable, Iterator as iterator",
                f"from enum import Enum",
                f"import {self.import_path}"]
 
@@ -345,7 +345,9 @@ class NanobindStubsGenerator:
 
     def _analyse_module(self, module: Any, stub_entry: StubEntry) -> StubModule:
         for name, obj in inspect.getmembers(module):
-            if name.startswith("_") and name != "__init__":
+            py_funcs = ["__init__", "__len__", "__bool__", "__repr__", "__iter__",
+                "__getitem__", "__setitem__", "__delitem__", "__contains__", ]
+            if name.startswith("_") and name not in py_funcs:
                 continue
 
             has_been_handled = False
@@ -390,6 +392,12 @@ class NanobindStubsGenerator:
                                 stub_routine = StubNanobindConstructor(name, obj, suppress_warning=True)
                             else:
                                 stub_routine = StubNanobindConstructor(name, obj)
+                    elif name in py_funcs:
+                        signature, doc_str = utils.parse_method_doc(name, obj, False, True)
+                        if signature == "__repr__(*args, **kwargs)" and doc_str is None:
+                            stub_routine = None
+                        else:
+                            stub_routine = StubNanobindMethod(name, obj)
                     else:
                         stub_routine = StubRoutine(name, obj)
                 has_been_handled = True
